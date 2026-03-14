@@ -1,13 +1,25 @@
 FROM node:20-slim
 
 # Install Chrome/Chromium dependencies (required by Ulixee Hero)
+# Based on official Ulixee Cloud Docker setup
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Chrome core dependencies
     libnspr4 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
     libcups2 libxcb1 libatspi2.0-0 libx11-6 libxcomposite1 libxdamage1 \
     libxext6 libxfixes3 libxrandr2 libgbm1 libcairo2 libpango-1.0-0 libasound2 \
     libdrm2 libxkbcommon0 libxshmfence1 \
-    ca-certificates fonts-liberation \
+    # Additional libraries needed by Hero Chrome
+    libdbus-1-3 libgtk-3-0 libxss1 xdg-utils \
+    # Virtual framebuffer for headless Chrome
+    xvfb \
+    # Fonts for proper rendering
+    ca-certificates fonts-liberation fonts-freefont-ttf \
+    # Utilities
+    curl wget \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure shared memory for Chrome (prevents crashes)
+RUN chmod 1777 /dev/shm || true
 
 WORKDIR /app
 
@@ -17,6 +29,9 @@ COPY package.json package-lock.json* ./
 # Install ALL dependencies (including devDependencies for build tools like tsup)
 RUN npm install
 
+# Install Hero browser dependencies (downloads matching Chromium)
+RUN npx @ulixee/chrome-app install || echo "Chrome install via npx failed, trying install-browser-deps..." && npx install-browser-deps || true
+
 # Copy source and build
 COPY . .
 RUN npm run build
@@ -24,12 +39,17 @@ RUN npm run build
 # Prune devDependencies after build to reduce image size
 RUN npm prune --omit=dev
 
+# Create entrypoint script for xvfb
+RUN printf '#!/bin/sh\nexec xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node server.js\n' > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
+
 # Expose port
 EXPOSE 3100
 
 ENV PORT=3100
 ENV NODE_ENV=production
 ENV POOL_SIZE=3
+ENV DISPLAY=:99
 
-# server.js uses ES module import syntax, run directly with node
-CMD ["node", "server.js"]
+# Use xvfb-run to provide virtual display for Chrome
+CMD ["/app/entrypoint.sh"]
