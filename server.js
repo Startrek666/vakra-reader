@@ -179,7 +179,7 @@ fetch('/health').then(r=>r.json()).then(d=>{
 async function doScrape(){
   const raw=document.getElementById('url-input').value.trim();
   if(!raw){alert('请输入至少一个 URL');return;}
-  const urls=raw.split('\\n').map(u=>u.trim()).filter(u=>u.startsWith('http'));
+  const urls=raw.split('\n').map(u=>u.trim()).filter(u=>u.startsWith('http'));
   if(!urls.length){alert('未检测到有效 URL（需以 http:// 或 https:// 开头）');return;}
 
   const fmt=document.getElementById('fmt').value;
@@ -238,8 +238,8 @@ async function doScrape(){
         '<b style="color:#58a6ff">Length:</b> '+rawContent.length+' chars'+'</div>'+
         (fmt==='markdown'?
           '<div class="view-btns">'+
-          '<button class="view-btn active" id="vb-md-'+i+'" onclick="tv('+i+',\'md\')">渲染预览</button>'+
-          '<button class="view-btn" id="vb-raw-'+i+'" onclick="tv('+i+',\'raw\')">原始 Markdown</button>'+
+          '<button class="view-btn active" id="vb-md-'+i+'" onclick="tv('+i+',&#39;md&#39;)">渲染预览</button>'+
+          '<button class="view-btn" id="vb-raw-'+i+'" onclick="tv('+i+',&#39;raw&#39;)">原始 Markdown</button>'+
           '</div>'+
           '<div id="vm-'+i+'" class="markdown-view">'+md2html(rawContent)+'</div>'+
           '<pre id="vr-'+i+'" style="display:none">'+esc(rawContent)+'</pre>'
