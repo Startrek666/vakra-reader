@@ -1,0 +1,35 @@
+FROM node:20-slim
+
+# Install Chrome/Chromium dependencies (required by Ulixee Hero)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnspr4 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+    libcups2 libxcb1 libatspi2.0-0 libx11-6 libxcomposite1 libxdamage1 \
+    libxext6 libxfixes3 libxrandr2 libgbm1 libcairo2 libpango-1.0-0 libasound2 \
+    libdrm2 libxkbcommon0 libxshmfence1 \
+    ca-certificates fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install ALL dependencies (including devDependencies for build tools like tsup)
+RUN npm install
+
+# Copy source and build
+COPY . .
+RUN npm run build
+
+# Prune devDependencies after build to reduce image size
+RUN npm prune --omit=dev
+
+# Expose port
+EXPOSE 3100
+
+ENV PORT=3100
+ENV NODE_ENV=production
+ENV POOL_SIZE=3
+
+# server.js uses ES module import syntax, run directly with node
+CMD ["node", "server.js"]
