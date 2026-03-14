@@ -145,10 +145,12 @@ export class Scraper {
   private async scrapeSingleUrl(url: string, index: number): Promise<WebsiteScrapeResult | null> {
     const startTime = Date.now();
 
-    // Check robots.txt before scraping
-    const robotsRules = await this.getRobotsRules(url);
-    if (!isUrlAllowed(url, robotsRules)) {
-      throw new Error(`URL blocked by robots.txt: ${url}`);
+    // Check robots.txt before scraping (can be disabled via respectRobotsTxt: false)
+    if (this.options.respectRobotsTxt !== false) {
+      const robotsRules = await this.getRobotsRules(url);
+      if (!isUrlAllowed(url, robotsRules)) {
+        throw new Error(`URL blocked by robots.txt: ${url}`);
+      }
     }
 
     try {

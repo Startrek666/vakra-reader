@@ -23,6 +23,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.env.PORT || "3100", 10);
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB
+// 是否遵守 robots.txt（默认 false，知乎等网站会封禁）
+const RESPECT_ROBOTS = process.env.RESPECT_ROBOTS_TXT === "true";
 
 // 单例 ReaderClient，跨请求复用（避免重复初始化 HeroCore / 浏览器池）
 let readerInstance = null;
@@ -128,6 +130,7 @@ const server = http.createServer(async (req, res) => {
         batchTimeoutMs,
         maxRetries: 1,
         skipEngines,
+        respectRobotsTxt: body.respect_robots_txt ?? RESPECT_ROBOTS,
       });
 
       const data = result.data.map((item) => ({

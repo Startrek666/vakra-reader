@@ -147,6 +147,9 @@ export interface ScrapeOptions {
 
   /** Force a specific engine, skipping the cascade */
   forceEngine?: EngineName;
+
+  /** Whether to respect robots.txt (default: true). Set to false to scrape sites that block bots. */
+  respectRobotsTxt?: boolean;
 }
 
 /**
@@ -362,6 +365,8 @@ export const DEFAULT_OPTIONS: Omit<
   // Hero-specific defaults
   verbose: false,
   showChrome: false,
+  // Robots.txt
+  respectRobotsTxt: true,
 };
 
 /**
