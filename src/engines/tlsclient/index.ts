@@ -56,7 +56,6 @@ const MIN_CONTENT_LENGTH = 100;
  * SPA detection thresholds
  */
 const SPA_TEXT_RATIO_THRESHOLD = 0.02; // text < 2% of HTML = likely SPA shell
-const SPA_MIN_TEXT_LENGTH = 500;       // text < 500 chars = definitely a shell
 
 /**
  * TLS Client Engine implementation using got-scraping
@@ -142,11 +141,11 @@ export class TlsClientEngine implements Engine {
 
       // SPA detection: JS-rendered pages return mostly scripts with little visible text
       const textRatio = html.length > 0 ? textContent.length / html.length : 0;
-      if (textRatio < SPA_TEXT_RATIO_THRESHOLD && textContent.length < SPA_MIN_TEXT_LENGTH) {
+      if (textRatio < SPA_TEXT_RATIO_THRESHOLD) {
         logger?.debug(
           `[tlsclient] SPA detected (text: ${textContent.length} chars, ratio: ${(textRatio * 100).toFixed(1)}% of ${html.length} chars HTML) - needs JS execution`
         );
-        throw new InsufficientContentError("tlsclient", textContent.length, SPA_MIN_TEXT_LENGTH);
+        throw new InsufficientContentError("tlsclient", textContent.length, Math.ceil(html.length * SPA_TEXT_RATIO_THRESHOLD));
       }
 
       return {

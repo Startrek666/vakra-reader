@@ -78,7 +78,6 @@ const MIN_CONTENT_LENGTH = 100;
  * e.g. modelscope.cn returns 100KB HTML but only ~900 chars text (0.9%)
  */
 const SPA_TEXT_RATIO_THRESHOLD = 0.02; // text < 2% of HTML = likely SPA shell
-const SPA_MIN_TEXT_LENGTH = 500;       // text < 500 chars = definitely a shell
 
 /**
  * HTTP Engine implementation using native fetch
@@ -140,12 +139,13 @@ export class HttpEngine implements Engine {
 
       // SPA detection: JS-rendered pages return mostly scripts with little visible text
       // e.g. React/Vue SPAs return a div#root with no content until JS executes
+      // modelscope.cn: ~100KB HTML but only ~900 chars text (0.9%) - needs Hero
       const textRatio = html.length > 0 ? textContent.length / html.length : 0;
-      if (textRatio < SPA_TEXT_RATIO_THRESHOLD && textContent.length < SPA_MIN_TEXT_LENGTH) {
+      if (textRatio < SPA_TEXT_RATIO_THRESHOLD) {
         logger?.debug(
           `[http] SPA detected (text: ${textContent.length} chars, ratio: ${(textRatio * 100).toFixed(1)}% of ${html.length} chars HTML) - needs JS execution`
         );
-        throw new InsufficientContentError("http", textContent.length, SPA_MIN_TEXT_LENGTH);
+        throw new InsufficientContentError("http", textContent.length, Math.ceil(html.length * SPA_TEXT_RATIO_THRESHOLD));
       }
 
       return {
