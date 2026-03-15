@@ -127,9 +127,14 @@ export class HeroEngine implements Engine {
           }
         }
 
+        // Wait for dynamic content to stabilize (for SPA pages that load data via API)
+        await this.waitForContentStable(hero, logger);
+
         // Extract content
         const html = await hero.document.documentElement.outerHTML;
         const finalUrl = await hero.url;
+
+        console.log(`[hero-debug] url=${url} htmlLen=${html.length} textLen=${this.extractText(html).length}`);
 
         // Validate content length
         const textContent = this.extractText(html);
@@ -240,9 +245,46 @@ export class HeroEngine implements Engine {
 
     // Final stabilization
     await hero.waitForPaintingStable();
+  }
 
-    // Buffer for JS execution and dynamic content loading
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  /**
+   * Wait for dynamic content to stabilize (SPA pages load data via API after initial render)
+   * Polls DOM textContent length until it stops changing.
+   */
+  private async waitForContentStable(hero: Hero, logger?: EngineMeta["logger"]): Promise<void> {
+    const maxWaitMs = 8000;
+    const pollInterval = 500;
+    const requiredStableChecks = 3;
+    const startTime = Date.now();
+
+    let lastLength = 0;
+    let stableCount = 0;
+
+    while (Date.now() - startTime < maxWaitMs) {
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+
+      try {
+        const bodyText = await hero.document.body.textContent;
+        const currentLength = bodyText ? bodyText.length : 0;
+
+        console.log(`[hero-debug] content poll: ${currentLength} chars (stable=${stableCount}/${requiredStableChecks})`);
+
+        if (currentLength === lastLength) {
+          stableCount++;
+          if (stableCount >= requiredStableChecks) {
+            console.log(`[hero-debug] content stabilized at ${currentLength} chars after ${Date.now() - startTime}ms`);
+            return;
+          }
+        } else {
+          stableCount = 0;
+          lastLength = currentLength;
+        }
+      } catch {
+        // Error reading DOM, continue
+      }
+    }
+
+    console.log(`[hero-debug] content wait timed out after ${maxWaitMs}ms, last length: ${lastLength}`);
   }
 
   /**
