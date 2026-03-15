@@ -132,21 +132,25 @@ export class HttpEngine implements Engine {
 
       // Check for sufficient content
       const textContent = this.extractText(html);
+      const textRatio = html.length > 0 ? textContent.length / html.length : 0;
+
+      // DEBUG: 打印 SPA 检测数据
+      console.log(`[http-debug] url=${url} htmlLen=${html.length} textLen=${textContent.length} ratio=${(textRatio * 100).toFixed(1)}% threshold=${(SPA_TEXT_RATIO_THRESHOLD * 100)}%`);
+
       if (textContent.length < MIN_CONTENT_LENGTH) {
-        logger?.debug(`[http] Insufficient content: ${textContent.length} chars`);
+        console.log(`[http-debug] REJECT: insufficient content (${textContent.length} < ${MIN_CONTENT_LENGTH})`);
         throw new InsufficientContentError("http", textContent.length, MIN_CONTENT_LENGTH);
       }
 
       // SPA detection: JS-rendered pages return mostly scripts with little visible text
       // e.g. React/Vue SPAs return a div#root with no content until JS executes
       // modelscope.cn: ~100KB HTML but only ~900 chars text (0.9%) - needs Hero
-      const textRatio = html.length > 0 ? textContent.length / html.length : 0;
       if (textRatio < SPA_TEXT_RATIO_THRESHOLD) {
-        logger?.debug(
-          `[http] SPA detected (text: ${textContent.length} chars, ratio: ${(textRatio * 100).toFixed(1)}% of ${html.length} chars HTML) - needs JS execution`
-        );
+        console.log(`[http-debug] REJECT: SPA detected, falling back to next engine`);
         throw new InsufficientContentError("http", textContent.length, Math.ceil(html.length * SPA_TEXT_RATIO_THRESHOLD));
       }
+
+      console.log(`[http-debug] ACCEPT: content OK`);
 
       return {
         html,

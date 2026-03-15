@@ -145,7 +145,7 @@ export class EngineOrchestrator {
       }
     };
 
-    log(`[orchestrator] Starting scrape of ${meta.url} with engines: ${this.engineOrder.join(" → ")}`);
+    console.log(`[orchestrator] Starting scrape of ${meta.url} with engines: ${this.engineOrder.join(" → ")}`);
 
     // Try each engine in order
     for (const engine of this.engines) {
@@ -153,7 +153,7 @@ export class EngineOrchestrator {
       attemptedEngines.push(engineName);
 
       try {
-        log(`[orchestrator] Trying ${engineName} engine...`);
+        console.log(`[orchestrator] Trying ${engineName} engine for ${meta.url}...`);
 
         // Create abort controller for this engine's timeout
         const controller = new AbortController();
@@ -172,7 +172,7 @@ export class EngineOrchestrator {
 
           clearTimeout(timeoutId);
 
-          log(`[orchestrator] ✓ ${engineName} succeeded in ${result.duration}ms`);
+          console.log(`[orchestrator] ✓ ${engineName} succeeded for ${meta.url} in ${result.duration}ms`);
 
           return {
             ...result,
@@ -188,27 +188,27 @@ export class EngineOrchestrator {
 
         // Log the error with appropriate detail
         if (error instanceof ChallengeDetectedError) {
-          log(`[orchestrator] ${engineName} detected challenge: ${error.challengeType}`);
+          console.log(`[orchestrator] ✗ ${engineName} challenge: ${error.challengeType}`);
         } else if (error instanceof InsufficientContentError) {
-          log(`[orchestrator] ${engineName} insufficient content: ${error.contentLength} chars`);
+          console.log(`[orchestrator] ✗ ${engineName} insufficient content: ${error.contentLength} chars`);
         } else if (error instanceof HttpError) {
-          log(`[orchestrator] ${engineName} HTTP error: ${error.statusCode}`);
+          console.log(`[orchestrator] ✗ ${engineName} HTTP error: ${error.statusCode}`);
         } else if (error instanceof EngineTimeoutError) {
-          log(`[orchestrator] ${engineName} timed out after ${error.timeoutMs}ms`);
+          console.log(`[orchestrator] ✗ ${engineName} timed out after ${error.timeoutMs}ms`);
         } else if (error instanceof EngineUnavailableError) {
-          log(`[orchestrator] ${engineName} unavailable: ${err.message}`);
+          console.log(`[orchestrator] ✗ ${engineName} unavailable: ${err.message}`);
         } else {
-          log(`[orchestrator] ${engineName} failed: ${err.message}`);
+          console.log(`[orchestrator] ✗ ${engineName} failed: ${err.message}`);
         }
 
         // Check if we should continue to next engine
         if (!this.shouldRetry(error)) {
-          log(`[orchestrator] Non-retryable error, stopping cascade`);
+          console.log(`[orchestrator] Non-retryable error, stopping cascade`);
           break;
         }
 
         // Continue to next engine
-        log(`[orchestrator] Falling back to next engine...`);
+        console.log(`[orchestrator] Falling back to next engine...`);
       }
     }
 
