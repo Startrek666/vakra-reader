@@ -39,9 +39,14 @@ RUN npm run build
 # Prune devDependencies after build to reduce image size
 RUN npm prune --omit=dev
 
-# Create entrypoint script for xvfb
-RUN printf '#!/bin/sh\nexec xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node server.js\n' > /app/entrypoint.sh \
-    && chmod +x /app/entrypoint.sh
+# Create entrypoint script: start Xvfb in background, then run Node
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo '# Start virtual framebuffer in background for Hero Chrome' >> /app/entrypoint.sh && \
+    echo 'Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp &' >> /app/entrypoint.sh && \
+    echo 'sleep 1' >> /app/entrypoint.sh && \
+    echo 'echo "[entrypoint] Xvfb started on display :99"' >> /app/entrypoint.sh && \
+    echo 'exec node server.js' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
 # Expose port
 EXPOSE 3100
@@ -51,5 +56,4 @@ ENV NODE_ENV=production
 ENV POOL_SIZE=3
 ENV DISPLAY=:99
 
-# Use xvfb-run to provide virtual display for Chrome
 CMD ["/app/entrypoint.sh"]
